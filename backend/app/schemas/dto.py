@@ -73,27 +73,27 @@ class GroupOut(_Base):
 
 
 class CameraIn(BaseModel):
-    name: str = "Camera"
-    rtsp_url: str
-    resolution_w: int = 1920
-    resolution_h: int = 1080
+    name: str = Field("Camera", min_length=1, max_length=128)
+    rtsp_url: str = Field(min_length=7, max_length=2048, pattern=r"^rtsps?://")
+    resolution_w: int = Field(1920, ge=16, le=7680)
+    resolution_h: int = Field(1080, ge=16, le=7680)
     group_id: int | None = None
     display_enabled: bool = True
-    dwell_limit_sec: int | None = None
-    count_limit: int | None = None
-    count_window_sec: int | None = None
+    dwell_limit_sec: int | None = Field(default=None, ge=1, le=86400)
+    count_limit: int | None = Field(default=None, ge=1, le=10000)
+    count_window_sec: int | None = Field(default=None, ge=1, le=7 * 86400)
 
 
 class CameraUpdateIn(BaseModel):
-    name: str | None = None
-    rtsp_url: str | None = None
-    resolution_w: int | None = None
-    resolution_h: int | None = None
+    name: str | None = Field(default=None, min_length=1, max_length=128)
+    rtsp_url: str | None = Field(default=None, min_length=7, max_length=2048, pattern=r"^rtsps?://")
+    resolution_w: int | None = Field(default=None, ge=16, le=7680)
+    resolution_h: int | None = Field(default=None, ge=16, le=7680)
     group_id: int | None = None
     display_enabled: bool | None = None
-    dwell_limit_sec: int | None = None
-    count_limit: int | None = None
-    count_window_sec: int | None = None
+    dwell_limit_sec: int | None = Field(default=None, ge=1, le=86400)
+    count_limit: int | None = Field(default=None, ge=1, le=10000)
+    count_window_sec: int | None = Field(default=None, ge=1, le=7 * 86400)
 
 
 class CameraOut(_Base):

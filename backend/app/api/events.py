@@ -56,8 +56,9 @@ def list_events(
     if end:
         q = q.filter(Event.start_time <= end)
     if notes_q:
-        like = f"%{notes_q}%"
-        q = q.filter(or_(Event.review_notes.like(like)))
+        # Escape LIKE wildcards so a search for "100%" doesn't match every row.
+        escaped = notes_q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+        q = q.filter(or_(Event.review_notes.like(f"%{escaped}%", escape="\\")))
 
     total = q.count()
 
@@ -102,9 +103,16 @@ def update_review(
 
 
 def _safe_path(base: str, rel: str) -> Path:
-    base_p = Path(base).resolve()
-    candidate = (base_p / rel).resolve()
-    if base_p not in candidate.parents and candidate != base_p:
+    """Resolve ``base/rel`` and reject anything that escapes the base, including
+    absolute ``rel`` values, parent traversal, and symlink-based escape.
+    """
+    if not rel or Path(rel).is_absolute():
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Bad path")
+    base_p = Path(base).resolve(strict=False)
+    candidate = (base_p / rel).resolve(strict=False)
+    try:
+        candidate.relative_to(base_p)
+    except ValueError:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Bad path")
     return candidate
 
@@ -134,4 +142,6 @@ def get_clip(event_id: int, user: User = Depends(current_user), db: Session = De
     p = _safe_path(settings.CLIPS_DIR, e.clip_path)
     if not p.exists():
         raise HTTPException(status.HTTP_404_NOT_FOUND)
-    return FileResponse(p, media_type="video/mp4")
+    # Workers write MPEG-TS clips (.ts). Older deployments may still have .mp4 files.
+    media = "video/mp4" if str(p).endswith(".mp4") else "video/MP2T"
+    return FileResponse(p, media_type=media)

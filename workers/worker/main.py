@@ -72,9 +72,15 @@ async def _supervise(hub: StreamHub, detector: PersonDetector, reid: ReIDEngine,
 
     async def _reconcile() -> None:
         active = await _list_active_cameras()
-        wanted = set(active.keys())
-        if len(wanted) > settings.WORKER_MAX_CAMERAS:
-            wanted = set(list(wanted)[: settings.WORKER_MAX_CAMERAS])
+        # Deterministic cap: pick the lowest N camera IDs so the same set
+        # is selected on every reconcile (sets are unordered, list[:N] of a
+        # set would flap between reconciles).
+        wanted_sorted = sorted(active.keys())[: settings.WORKER_MAX_CAMERAS]
+        wanted = set(wanted_sorted)
+        # Also respawn dead worker tasks (run() exited but supervisor didn't notice).
+        for cid, (_cw, task) in list(workers.items()):
+            if task.done():
+                workers.pop(cid, None)
         running = set(workers.keys())
         for cid in running - wanted:
             await _stop(cid)

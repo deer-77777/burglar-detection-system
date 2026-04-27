@@ -23,7 +23,19 @@ def _extract_token(authorization: str | None, access_token_cookie: str | None) -
     return access_token_cookie
 
 
+# Endpoints a user with must_change_password=True is still allowed to call.
+# Everything else returns 409 until they pick a new password.
+_PASSWORD_CHANGE_ALLOWED = frozenset({
+    "/api/auth/me",
+    "/api/auth/change-password",
+    "/api/auth/logout",
+    "/api/auth/refresh",
+    "/api/health",
+})
+
+
 def current_user(
+    request: Request,
     db: Session = Depends(get_db),
     authorization: str | None = Header(default=None),
     access_token: str | None = Cookie(default=None),
@@ -42,6 +54,12 @@ def current_user(
     user = db.get(User, user_id)
     if not user:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User not found")
+
+    if user.must_change_password and request.url.path not in _PASSWORD_CHANGE_ALLOWED:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "Password change required before using the API",
+        )
     return user
 
 

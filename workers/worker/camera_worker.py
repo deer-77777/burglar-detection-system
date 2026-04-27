@@ -90,11 +90,13 @@ class CameraWorker:
             in_stream = next(s for s in container.streams if s.type == "video")
             in_stream.thread_type = "AUTO"
 
+            from fractions import Fraction
+            tb = in_stream.time_base or Fraction(1, 90000)
             ring.remember_stream(
                 codec_name=in_stream.codec_context.name,
                 width=in_stream.codec_context.width,
                 height=in_stream.codec_context.height,
-                time_base=float(in_stream.time_base or 0) or 1 / 90000,
+                time_base=tb,
                 extradata=in_stream.codec_context.extradata,
             )
 
@@ -113,10 +115,9 @@ class CameraWorker:
                 wall_t = time.time()
 
                 try:
-                    raw = bytes(packet)
-                    ring.push(raw, packet.is_keyframe, wall_t=wall_t)
+                    ring.push(packet, wall_t=wall_t)
                 except Exception:
-                    pass
+                    log.warning("ring buffer push failed for camera %s", self.camera_id, exc_info=True)
 
                 try:
                     packet.stream = ts_stream
@@ -163,8 +164,7 @@ class CameraWorker:
 
                 for t, emb in zip(tracks, embeddings):
                     pgid = await asyncio.to_thread(self._reid.match_or_create, sgid, emb)
-                    threshold = state.update_seen(pgid, wall_t)
-                    if threshold is not None:
+                    for threshold in state.update_seen(pgid, wall_t):
                         await self._emit_event(cam, gpath, threshold, frame, ring, wall_t)
 
             ts_out.close()
@@ -202,7 +202,7 @@ class CameraWorker:
         snap_path = Path(settings.SNAPS_DIR) / snap_rel
         cv2.imwrite(str(snap_path), frame)
 
-        clip_rel = f"{cam.id}/{ts}_{threshold.kind}_{threshold.person_global_id}.mp4"
+        clip_rel = f"{cam.id}/{ts}_{threshold.kind}_{threshold.person_global_id}.ts"
         clip_path = Path(settings.CLIPS_DIR) / clip_rel
         ring.snapshot_after(threshold.end_time, settings.RING_BUFFER_SEC, clip_path)
 

@@ -9,7 +9,7 @@ from app.config import settings
 from app.db.models import Camera, CameraConnectionLog, User
 from app.schemas.dto import CameraIn, CameraOut, CameraTestIn, CameraTestOut, CameraUpdateIn
 from app.services.audit import write_audit
-from app.services.crypto import decrypt_str, encrypt_str
+from app.services.crypto import encrypt_str
 from app.services.rtsp_probe import onvif_discover, probe_rtsp, split_rtsp
 
 router = APIRouter(prefix="/api/cameras", tags=["cameras"])
@@ -178,14 +178,7 @@ def connection_log(
     ]
 
 
-@router.get("/{camera_id}/rtsp-url-decoded")
-def reveal_rtsp_url(
-    camera_id: int,
-    _: User = Depends(require_perm("can_manage_cameras")),
-    db: Session = Depends(get_db),
-) -> dict:
-    """Returns the decrypted RTSP URL — used by the worker over the internal network only."""
-    cam = db.get(Camera, camera_id)
-    if not cam:
-        raise HTTPException(status.HTTP_404_NOT_FOUND)
-    return {"rtsp_url": decrypt_str(cam.rtsp_url_enc)}
+# NOTE: an earlier draft had a /rtsp-url-decoded endpoint here that returned
+# plaintext camera credentials over HTTP. It was unused (workers decrypt
+# locally via worker/crypto.py) and removed — credentials must never leave
+# the server process boundary.

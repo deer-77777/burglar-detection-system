@@ -22,6 +22,7 @@ import {
 } from "@mui/material";
 
 import { api } from "@/api/client";
+import ClipPlayer from "@/components/ClipPlayer";
 
 type EventRow = {
   id: number;
@@ -230,14 +231,7 @@ export default function History() {
                     sx={{ width: "100%", maxWidth: 480, borderRadius: 1, border: 1, borderColor: "divider" }}
                   />
                 )}
-                {selected.clip_path && (
-                  <Box
-                    component="video"
-                    src={`/api/events/${selected.id}/clip`}
-                    controls
-                    sx={{ width: "100%", maxWidth: 480, borderRadius: 1, border: 1, borderColor: "divider" }}
-                  />
-                )}
+                {selected.clip_path && <ClipPlayer src={`/api/events/${selected.id}/clip`} />}
               </Stack>
               <Stack spacing={2} sx={{ mt: 2 }}>
                 <TextField

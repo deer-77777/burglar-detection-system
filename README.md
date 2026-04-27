@@ -107,6 +107,27 @@ $EDITOR .env           # set MYSQL_*, PUBLIC_ORIGIN, BACKUP_DIR, etc.
 ./install.sh           # second run: brings up docker compose
 ```
 
+## Known issues (not yet fixed)
+
+These were surfaced by an audit pass but deferred to v1.1. None block the
+non-detection parts of the system (login, CRUD, history) for the typical
+single-store deployment.
+
+| Severity | Area | Issue |
+|---|---|---|
+| High | Worker | Inference is gated to keyframes (`camera_worker.py:136`). With H.264 IDR cadence of 1–4s, dwell timing is coarser than `TARGET_FPS` would suggest. Fix: decode every packet, sample frames at `TARGET_FPS`. |
+| High | Backend WS | `ws_dashboard` opens one Redis pubsub per connected tab. With many dashboards open, Redis fan-out scales poorly. Fix: share a single subscriber and broadcast in-process. |
+| High | Backend | DB session is held for the full WS lifetime via `Depends(get_db)` on `/ws/dashboard` and `/ws/stream/{id}`. Long-lived sessions exhaust the SQLAlchemy pool. Fix: open the session for auth, close it before entering the loop. |
+| High | Worker | ReID gallery match is racy across cameras (two workers can mint different `pgid`s for the same person mid-frame). Also, gallery is fetched in full per detection — O(N) per frame. Fix: Lua-guarded `SETNX` and switch to an ANN index. |
+| Medium | Backend | Login is rate-limited per username but not per IP. An attacker with a list of usernames can guess one password each across many. Fix: add a Redis-backed IP bucket. |
+| Medium | Backend | `_publish_camera_change` uses a synchronous Redis client inside async endpoints; it blocks the event loop on every camera write. Fix: use `redis.asyncio` and `await`. |
+| Medium | Backend | Group move recomputes `level` for the moved node only, not its descendants (`groups.py`). Currently safe because L3 is a leaf, but breaks if L2-with-children is moved. |
+| Medium | Backend | Group delete/move doesn't `_publish_camera_change`, so workers keep the stale `group_path` and Store-scoped ReID until a camera is touched. |
+| Medium | Worker | `store_group_id_for` is computed once per worker run; moving a camera between stores keeps the old gallery scope until the worker restarts. |
+| Medium | Backend/Worker | Default DB pool size (5+10) is tight under per-camera worker DB chatter. Fix: tune `pool_size`. |
+| Low | Frontend | `<input type="datetime-local">` sends naive local time; backend stores UTC. Users in non-UTC zones get a window shift in History filters. |
+| Low | Frontend | A 200 from `/api/auth/refresh` with garbage body would send the api client into a redirect-less unauth state. Edge case. |
+
 ## What's intentionally not done
 
 * **Tests.** No test suite is included. The structure supports one — `pytest`

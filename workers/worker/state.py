@@ -44,9 +44,10 @@ class CameraStateMachine:
         self.count_window_sec = count_window_sec
         self._states: dict[str, PersonState] = {}
 
-    def update_seen(self, pgid: str, now: float) -> ThresholdEvent | None:
+    def update_seen(self, pgid: str, now: float) -> list[ThresholdEvent]:
+        """Return zero, one, or both kinds of threshold events triggered by this sighting."""
         st = self._states.get(pgid)
-        emitted: ThresholdEvent | None = None
+        emitted: list[ThresholdEvent] = []
 
         if st is None:
             st = PersonState(first_seen_at=now, last_seen_at=now, appearance_starts=[now])
@@ -65,27 +66,24 @@ class CameraStateMachine:
         dwell_secs = now - st.first_seen_at
         if not st.dwell_emitted and dwell_secs >= self.dwell_limit_sec:
             st.dwell_emitted = True
-            emitted = ThresholdEvent(
+            emitted.append(ThresholdEvent(
                 kind="DWELL",
                 person_global_id=pgid,
                 start_time=st.first_seen_at,
                 end_time=now,
                 duration_sec=int(dwell_secs),
-            )
+            ))
 
         appearance_count = len(st.appearance_starts)
-        if (
-            not st.revisit_emitted_for_appearance
-            and appearance_count >= self.count_limit
-        ):
+        if not st.revisit_emitted_for_appearance and appearance_count >= self.count_limit:
             st.revisit_emitted_for_appearance = True
-            emitted = ThresholdEvent(
+            emitted.append(ThresholdEvent(
                 kind="REVISIT",
                 person_global_id=pgid,
                 start_time=st.appearance_starts[0],
                 end_time=now,
                 appearance_count=appearance_count,
-            )
+            ))
         return emitted
 
     def gc(self, max_age_sec: float = 3600.0) -> None:

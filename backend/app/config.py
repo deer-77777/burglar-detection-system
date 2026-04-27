@@ -54,3 +54,18 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def _validate_secret() -> None:
+    if settings.APP_ENV == "production":
+        if (
+            len(settings.APP_SECRET_KEY) < 32
+            or settings.APP_SECRET_KEY in {"change-me", "change-me-32-chars-minimum-please-rotate"}
+        ):
+            raise RuntimeError(
+                "APP_SECRET_KEY must be set to a strong random value (>=32 chars) in production. "
+                "Generate one with `python -c 'import secrets; print(secrets.token_urlsafe(48))'`."
+            )
+
+
+_validate_secret()
