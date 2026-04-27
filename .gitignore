@@ -5,8 +5,6 @@ __pycache__/
 secrets/
 node_modules/
 frontend/dist/
-workers/models/*.pt
-workers/models/*.onnx
 *.log
 .DS_Store
 deploy/nginx/certs/

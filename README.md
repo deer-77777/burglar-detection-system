@@ -57,9 +57,9 @@ mkdir -p secrets
 python3 -c "from cryptography.fernet import Fernet; open('secrets/camera_cred.key','wb').write(Fernet.generate_key())"
 chmod 600 secrets/camera_cred.key
 
-# Place model weights (see workers/models/README.md):
-#   workers/models/yolo11n.pt
-#   workers/models/osnet_x0_25.pth
+# Download model weights (one-shot, runs in a throwaway container):
+./scripts/download-models.sh
+# → populates workers/models/ with yolo11n/s/m.pt and osnet_x0_25/0_5/1_0.pth.
 
 # Build the SPA:
 ( cd frontend && npm install && npm run build )

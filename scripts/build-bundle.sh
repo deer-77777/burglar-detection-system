@@ -25,14 +25,9 @@ echo "==> vendoring Python wheels"
 pip download -r "$ROOT/backend/requirements.txt" -d "$STAGE/wheels/backend"
 pip download -r "$ROOT/workers/requirements.txt" -d "$STAGE/wheels/workers"
 
-echo "==> downloading model weights"
-if [[ ! -f "$ROOT/workers/models/yolo11n.pt" ]]; then
-  python -c "from ultralytics import YOLO; YOLO('yolo11n.pt')" \
-    && cp "$(ls -t ~/.cache/ultralytics/yolo11n.pt 2>/dev/null || echo yolo11n.pt)" "$ROOT/workers/models/yolo11n.pt" \
-    || true
-fi
-cp "$ROOT/workers/models/yolo11n.pt" "$STAGE/models/" 2>/dev/null || echo "WARN: yolo11n.pt missing"
-cp "$ROOT/workers/models/osnet_x0_25.pth" "$STAGE/models/" 2>/dev/null || echo "WARN: osnet_x0_25.pth missing"
+echo "==> downloading model weights (skipped if already present)"
+"$ROOT/scripts/download-models.sh"
+cp -a "$ROOT/workers/models/." "$STAGE/models/"
 
 echo "==> building frontend"
 ( cd "$ROOT/frontend" && npm install --no-audit --no-fund && npm run build )
