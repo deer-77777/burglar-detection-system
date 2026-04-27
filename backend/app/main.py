@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -50,9 +51,21 @@ def _ensure_cred_key() -> None:
     p.chmod(0o600)
 
 
-def _wait_for_db_and_seed() -> None:
-    with engine.begin() as conn:
-        conn.execute(text("SELECT 1"))
+def _wait_for_db_and_seed(timeout_sec: float = 60.0, sleep_sec: float = 2.0) -> None:
+    log = structlog.get_logger("startup")
+    deadline = time.time() + timeout_sec
+    last_err: Exception | None = None
+    while True:
+        try:
+            with engine.begin() as conn:
+                conn.execute(text("SELECT 1"))
+            break
+        except Exception as exc:
+            last_err = exc
+            if time.time() >= deadline:
+                raise RuntimeError(f"database unreachable after {timeout_sec:.0f}s: {exc}") from exc
+            log.info("waiting for database", error=str(exc)[:200])
+            time.sleep(sleep_sec)
     db = SessionLocal()
     try:
         admin = db.query(User).filter(User.username == "admin").first()

@@ -11,10 +11,14 @@ services:
       - mysql_data:/var/lib/mysql
       - ./backend/app/migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
-      interval: 10s
+      # Verifies the application user can actually query the burglar DB,
+      # not just that mysqladmin ping responds (which can pass while init scripts
+      # are still running on first boot).
+      test: ["CMD-SHELL", "mysql -h 127.0.0.1 -u\"$$MYSQL_USER\" -p\"$$MYSQL_PASSWORD\" -e 'SELECT 1' \"$$MYSQL_DATABASE\""]
+      interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 30
+      start_period: 30s
 
   redis:
     image: redis:7-alpine

@@ -36,6 +36,10 @@
     "sort_path": "Group path",
     "sort_last_event": "Last event",
     "sort_alerts": "Alerts today",
+    "view": "View",
+    "view_grouped": "Grouped",
+    "view_flat": "Flat",
+    "unassigned": "Unassigned",
     "state": {
       "live": "Live",
       "disabled": "Disabled",
@@ -73,7 +77,14 @@
     "rename": "Rename",
     "delete": "Delete",
     "delete_confirm": "Delete this group? Cameras will be unassigned.",
-    "level": { "1": "Store", "2": "Floor", "3": "Section" }
+    "level": { "1": "Store", "2": "Floor", "3": "Section" },
+    "attached_cameras": "Cameras",
+    "unassigned_cameras": "Unassigned cameras",
+    "no_attached": "No cameras attached.",
+    "no_unassigned": "All cameras are assigned to a group.",
+    "attach_to": "Attach to…",
+    "move_to": "Move to…",
+    "detach": "Detach"
   },
   "history": {
     "title": "Abnormal behavior history",
@@ -87,7 +98,8 @@
     "status": { "NEW": "New", "REVIEWED": "Reviewed", "FALSE_POSITIVE": "False positive", "ESCALATED": "Escalated" },
     "review_status": "Review status",
     "review_notes": "Notes",
-    "save": "Save"
+    "save": "Save",
+    "no_events": "No events match your filters."
   },
   "users": {
     "title": "Users",

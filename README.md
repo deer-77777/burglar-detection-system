@@ -11,7 +11,7 @@ on a single dashboard. Runs entirely on the in-store LAN.
 backend/    FastAPI app (auth, CRUD, history, WS hub).
 workers/    Per-camera detection workers (YOLO11 + ByteTrack + OSNet ReID),
             ring-buffer clip dump, MPEG-TS stream server.
-frontend/   React 18 + Vite + Tailwind UI (EN/JA).
+frontend/   React 18 + Vite + MUI 6 UI (EN/JA).
 deploy/     Nginx (TLS, static + proxy) and the nightly mysqldump container.
 scripts/    Offline USB bundle build + install scripts.
 ```
@@ -59,7 +59,9 @@ chmod 600 secrets/camera_cred.key
 
 # Download model weights (one-shot, runs in a throwaway container):
 ./scripts/download-models.sh
-# → populates workers/models/ with yolo11n/s/m.pt and osnet_x0_25/0_5/1_0.pth.
+# → fetches the boot defaults: yolo11n.pt + osnet_x0_25.pth.
+# Larger variants for beefy GPUs:
+#   YOLO_VARIANTS=yolo11m REID_VARIANTS=osnet_x1_0 ./scripts/download-models.sh
 
 # Build the SPA:
 ( cd frontend && npm install && npm run build )
@@ -69,6 +71,9 @@ docker compose up -d
 
 Then browse https://localhost/ and log in as `admin / admin` — you'll be forced
 to change the password.
+
+> **For end users:** see [docs/OPERATOR_GUIDE.md](docs/OPERATOR_GUIDE.md) for a
+> page-by-page walkthrough explaining every input field on the dashboard.
 
 ### CPU-only / no-GPU dev run
 

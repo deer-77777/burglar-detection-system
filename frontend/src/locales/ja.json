@@ -36,6 +36,10 @@
     "sort_path": "グループ",
     "sort_last_event": "最新イベント",
     "sort_alerts": "本日のアラート",
+    "view": "表示",
+    "view_grouped": "グループ別",
+    "view_flat": "フラット",
+    "unassigned": "未割当",
     "state": {
       "live": "ライブ",
       "disabled": "無効",
@@ -73,7 +77,14 @@
     "rename": "名前変更",
     "delete": "削除",
     "delete_confirm": "このグループを削除しますか?カメラは未割当になります。",
-    "level": { "1": "店舗", "2": "フロア", "3": "セクション" }
+    "level": { "1": "店舗", "2": "フロア", "3": "セクション" },
+    "attached_cameras": "カメラ",
+    "unassigned_cameras": "未割当のカメラ",
+    "no_attached": "割り当てられたカメラはありません。",
+    "no_unassigned": "未割当のカメラはありません。",
+    "attach_to": "割り当て先…",
+    "move_to": "移動先…",
+    "detach": "解除"
   },
   "history": {
     "title": "異常行動履歴",
@@ -87,7 +98,8 @@
     "status": { "NEW": "新規", "REVIEWED": "確認済", "FALSE_POSITIVE": "誤検知", "ESCALATED": "エスカレ" },
     "review_status": "レビュー状態",
     "review_notes": "メモ",
-    "save": "保存"
+    "save": "保存",
+    "no_events": "条件に一致するイベントはありません。"
   },
   "users": {
     "title": "ユーザー",

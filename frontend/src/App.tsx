@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { Box, CircularProgress } from "@mui/material";
 
 import Layout from "@/components/Layout";
 import Toaster from "@/components/Toaster";
@@ -12,9 +13,25 @@ import History from "@/pages/History";
 import Users from "@/pages/Users";
 import { useAuth } from "@/auth/store";
 
+function FullScreenLoader() {
+  return (
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        bgcolor: "background.default",
+      }}
+    >
+      <CircularProgress />
+    </Box>
+  );
+}
+
 function RequireAuth() {
   const { me, loading } = useAuth();
-  if (loading) return <div className="p-4">…</div>;
+  if (loading) return <FullScreenLoader />;
   if (!me) return <Navigate to="/login" replace />;
   if (me.must_change_password) return <Navigate to="/change-password" replace />;
   return <Outlet />;

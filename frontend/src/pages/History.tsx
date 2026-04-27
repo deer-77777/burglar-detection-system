@@ -42,18 +42,37 @@ type EventRow = {
 type Page = { total: number; items: EventRow[] };
 const STATUSES = ["NEW", "REVIEWED", "FALSE_POSITIVE", "ESCALATED"] as const;
 
+function pad(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+function toLocalDatetime(d: Date): string {
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function currentMonthRange(): { start: string; end: string } {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+  // Day 0 of next month = last day of current month.
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 0);
+  return { start: toLocalDatetime(start), end: toLocalDatetime(end) };
+}
+
 export default function History() {
   const { t } = useTranslation();
   const qc = useQueryClient();
-  const [filters, setFilters] = useState({
-    event_type: "",
-    review_status: "",
-    person_global_id: "",
-    notes_q: "",
-    start: "",
-    end: "",
-    page: 1,
-    page_size: 50,
+  const [filters, setFilters] = useState(() => {
+    const range = currentMonthRange();
+    return {
+      event_type: "",
+      review_status: "",
+      person_global_id: "",
+      notes_q: "",
+      start: range.start,
+      end: range.end,
+      page: 1,
+      page_size: 50,
+    };
   });
   const [selected, setSelected] = useState<EventRow | null>(null);
   const [notes, setNotes] = useState("");
@@ -152,38 +171,48 @@ export default function History() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {(events.data?.items ?? []).map((e) => (
-              <TableRow
-                key={e.id}
-                hover
-                sx={{ cursor: "pointer" }}
-                onClick={() => {
-                  setSelected(e);
-                  setNotes(e.review_notes ?? "");
-                  setStatus(e.review_status);
-                }}
-              >
-                <TableCell>{e.start_time}</TableCell>
-                <TableCell>{e.group_path || `#${e.camera_id}`}</TableCell>
-                <TableCell>{t(`history.type.${e.event_type}`)}</TableCell>
-                <TableCell sx={{ fontFamily: "monospace", fontSize: 12 }}>{e.person_global_id}</TableCell>
-                <TableCell>
-                  {e.event_type === "DWELL" ? `${e.duration_sec ?? 0}s` : `×${e.appearance_count ?? 0}`}
+            {(events.data?.items ?? []).length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} align="center" sx={{ py: 4, color: "text.secondary" }}>
+                  {t("history.no_events")}
                 </TableCell>
-                <TableCell>{t(`history.status.${e.review_status}`)}</TableCell>
               </TableRow>
-            ))}
+            ) : (
+              (events.data?.items ?? []).map((e) => (
+                <TableRow
+                  key={e.id}
+                  hover
+                  sx={{ cursor: "pointer" }}
+                  onClick={() => {
+                    setSelected(e);
+                    setNotes(e.review_notes ?? "");
+                    setStatus(e.review_status);
+                  }}
+                >
+                  <TableCell>{e.start_time}</TableCell>
+                  <TableCell>{e.group_path || `#${e.camera_id}`}</TableCell>
+                  <TableCell>{t(`history.type.${e.event_type}`)}</TableCell>
+                  <TableCell sx={{ fontFamily: "monospace", fontSize: 12 }}>{e.person_global_id}</TableCell>
+                  <TableCell>
+                    {e.event_type === "DWELL" ? `${e.duration_sec ?? 0}s` : `×${e.appearance_count ?? 0}`}
+                  </TableCell>
+                  <TableCell>{t(`history.status.${e.review_status}`)}</TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </Paper>
 
-      <Stack direction="row" sx={{ mt: 2 }} justifyContent="center">
-        <Pagination
-          count={totalPages}
-          page={filters.page}
-          onChange={(_, p) => setFilters({ ...filters, page: p })}
-        />
-      </Stack>
+      {totalPages > 1 && (
+        <Stack direction="row" sx={{ mt: 2 }} justifyContent="center">
+          <Pagination
+            count={totalPages}
+            page={filters.page}
+            onChange={(_, p) => setFilters({ ...filters, page: p })}
+          />
+        </Stack>
+      )}
 
       <Dialog open={!!selected} onClose={() => setSelected(null)} maxWidth="md" fullWidth>
         {selected && (
