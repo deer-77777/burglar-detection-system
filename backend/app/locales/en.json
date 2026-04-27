@@ -1,0 +1,9 @@
+{
+  "ERR_AUTH": "Authentication failed. Check the username and password.",
+  "ERR_HOST_UNREACHABLE": "The camera could not be reached. Check the IP address and network.",
+  "ERR_TIMEOUT": "The camera did not respond in time.",
+  "ERR_BAD_PATH": "The stream path is invalid. Check the RTSP URL.",
+  "ERR_CODEC_UNSUPPORTED": "The camera's codec is not supported.",
+  "ERR_RESOLUTION_MISMATCH": "The configured resolution does not match what the camera reports.",
+  "ERR_UNKNOWN": "An error occurred."
+}

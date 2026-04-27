@@ -1,0 +1,104 @@
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/app/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - clips_data:/data/clips
+      - snaps_data:/data/snaps
+      - ./secrets/camera_cred.key:/run/secrets/camera_cred.key:ro
+    expose:
+      - "8000"
+
+  workers:
+    build:
+      context: ./workers
+    restart: unless-stopped
+    profiles: ["gpu"]
+    env_file: .env
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - clips_data:/data/clips
+      - snaps_data:/data/snaps
+      - ./secrets/camera_cred.key:/run/secrets/camera_cred.key:ro
+      - ./workers/models:/app/models:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    expose:
+      - "9000"
+
+  nginx:
+    build:
+      context: ./deploy/nginx
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./frontend/dist:/usr/share/nginx/html:ro
+      - ./deploy/nginx/certs:/etc/nginx/certs
+
+  backup:
+    build:
+      context: ./deploy/backup
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      BACKUP_DIR: /backup  # in-container mount; host path is set via the volume below.
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ${BACKUP_DIR:-/var/lib/burglar/backup}:/backup
+
+volumes:
+  mysql_data:
+  redis_data:
+  clips_data:
+  snaps_data:

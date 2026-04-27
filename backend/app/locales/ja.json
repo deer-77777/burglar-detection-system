@@ -1,0 +1,9 @@
+{
+  "ERR_AUTH": "認証に失敗しました。ユーザー名とパスワードを確認してください。",
+  "ERR_HOST_UNREACHABLE": "カメラに接続できませんでした。IPアドレスとネットワークを確認してください。",
+  "ERR_TIMEOUT": "カメラが応答しませんでした。",
+  "ERR_BAD_PATH": "ストリームパスが正しくありません。RTSP URL を確認してください。",
+  "ERR_CODEC_UNSUPPORTED": "カメラのコーデックはサポートされていません。",
+  "ERR_RESOLUTION_MISMATCH": "設定された解像度がカメラの報告と一致しません。",
+  "ERR_UNKNOWN": "エラーが発生しました。"
+}
